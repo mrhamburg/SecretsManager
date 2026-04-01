@@ -14,7 +14,7 @@ public sealed class AzureKeyVaultSecretProviderFactoryTests
     {
         var config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["vault.url"] = "https://myvault.vault.azure.net"
+            ["vaultUrl"] = "https://myvault.vault.azure.net"
         };
 
         var options = AzureKeyVaultSecretProviderFactory.MapConfiguration(config);
@@ -27,7 +27,7 @@ public sealed class AzureKeyVaultSecretProviderFactoryTests
     {
         var config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["vault.url"] = "https://myvault.vault.azure.net",
+            ["vaultUrl"] = "https://myvault.vault.azure.net",
             ["authentication.type"] = "serviceprincipal",
             ["authentication.tenantid"] = "tenant-123",
             ["authentication.clientid"] = "client-456",
@@ -48,7 +48,7 @@ public sealed class AzureKeyVaultSecretProviderFactoryTests
     {
         var config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["vault.url"] = "https://myvault.vault.azure.net",
+            ["vaultUrl"] = "https://myvault.vault.azure.net",
             ["authentication.type"] = "managedidentity",
             ["authentication.clientid"] = "user-assigned-id"
         };
@@ -78,7 +78,7 @@ public sealed class AzureKeyVaultSecretProviderFactoryTests
     {
         var config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["vault.url"] = "  ",
+            ["vaultUrl"] = "  ",
             ["authentication.type"] = "  "
         };
 
