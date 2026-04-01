@@ -18,7 +18,7 @@ public static class SecretProviderBuilderExtensions
         builder.UseProvider("ovh", settings =>
         {
             settings["endpoint"] = options.Endpoint;
-            
+
             if (!string.IsNullOrEmpty(options.ApplicationKey))
                 settings["application.key"] = options.ApplicationKey;
 

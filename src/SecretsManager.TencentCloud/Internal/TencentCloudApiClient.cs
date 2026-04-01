@@ -202,13 +202,13 @@ internal sealed class TencentCloudApiClient : ITencentCloudApiClient
     {
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var nonce = Guid.NewGuid().ToString("N");
-        
+
         // Build canonical request
         var canonicalRequest = BuildCanonicalRequest(action, parameters, timestamp, nonce);
-        
+
         // Calculate signature
         var signature = CalculateSignature(canonicalRequest, timestamp, nonce);
-        
+
         // Set headers
         _http.DefaultRequestHeaders.Clear();
         _http.DefaultRequestHeaders.Add("Authorization", signature);
@@ -217,7 +217,7 @@ internal sealed class TencentCloudApiClient : ITencentCloudApiClient
         _http.DefaultRequestHeaders.Add("X-TC-Timestamp", timestamp.ToString());
         _http.DefaultRequestHeaders.Add("X-TC-Nonce", nonce);
         _http.DefaultRequestHeaders.Add("X-TC-Region", _region);
-        
+
         // Prepare request body
         var requestBody = JsonSerializer.Serialize(parameters, JsonOptions);
         var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
@@ -229,23 +229,23 @@ internal sealed class TencentCloudApiClient : ITencentCloudApiClient
     {
         // HTTP Method
         var httpMethod = "POST";
-        
+
         // Canonical URI
         var canonicalUri = "/";
-        
+
         // Canonical Query String (empty for POST with body)
         var canonicalQueryString = "";
-        
+
         // Canonical Headers 
         var canonicalHeaders = $"content-type:application/json\nhost:{_http.BaseAddress?.Host}\nx-tc-action:{action}\nx-tc-nonce:{nonce}\nx-tc-region:{_region}\nx-tc-timestamp:{timestamp}\n";
-        
+
         // Signed Headers
         var signedHeaders = "content-type;host;x-tc-action;x-tc-nonce;x-tc-region;x-tc-timestamp";
-        
+
         // Payload (hash of request body)
         var payload = JsonSerializer.Serialize(parameters, JsonOptions);
         var payloadHash = Sha256Hex(payload);
-        
+
         // Final canonical request
         return $"{httpMethod}\n{canonicalUri}\n{canonicalQueryString}\n{canonicalHeaders}\n{signedHeaders}\n{payloadHash}";
     }
@@ -264,10 +264,10 @@ internal sealed class TencentCloudApiClient : ITencentCloudApiClient
         var kDate = HmacSha256(date, $"TC3{_secretKey}");
         var kService = HmacSha256(service, kDate);
         var kSigning = HmacSha256("tc3_request", kService);
-        
+
         // Calculate signature
         var signature = HmacSha256(stringToSign, kSigning);
-        
+
         return $"{algorithm} Credential={_secretId}/{credentialScope}, SignedHeaders={string.Join(";", "content-type", "host", "x-tc-action", "x-tc-nonce", "x-tc-region", "x-tc-timestamp")}, Signature={signature}";
     }
 
@@ -318,7 +318,7 @@ internal sealed class TencentCloudApiClient : ITencentCloudApiClient
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             var json = JsonSerializer.Deserialize<Dictionary<string, object>>(content, JsonOptions);
-            
+
             if (json?.TryGetValue("Error", out var errorObj) == true)
             {
                 var errorJson = JsonSerializer.Serialize(errorObj, JsonOptions);

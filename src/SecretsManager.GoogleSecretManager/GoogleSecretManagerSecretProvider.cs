@@ -189,12 +189,12 @@ public sealed class GoogleSecretManagerSecretProvider : ISecretProvider
         if (!string.IsNullOrWhiteSpace(options.Endpoint))
             builder.Endpoint = options.Endpoint;
 
-        #pragma warning disable CS0618
+#pragma warning disable CS0618
         if (!string.IsNullOrWhiteSpace(options.CredentialsPath))
             builder.CredentialsPath = options.CredentialsPath;
         else if (!string.IsNullOrWhiteSpace(options.CredentialsJson))
             builder.JsonCredentials = options.CredentialsJson;
-        #pragma warning restore CS0618
+#pragma warning restore CS0618
 
         return builder.Build();
     }

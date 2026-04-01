@@ -11,7 +11,7 @@ public static class SecretProviderBuilderExtensions
         builder.RegisterProvider(new AzureKeyVaultSecretProviderFactory());
 
         if (configure is null) return builder;
-        
+
         var options = new AzureKeyVaultOptions();
         configure(options);
 
