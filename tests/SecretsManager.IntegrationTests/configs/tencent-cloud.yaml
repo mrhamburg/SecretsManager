@@ -1,0 +1,7 @@
+# Fill in your Tencent Cloud credentials before running
+provider:
+  tencentCloud:
+    region: ap-beijing
+    secret:
+      id: your-secret-id
+      key: your-secret-key

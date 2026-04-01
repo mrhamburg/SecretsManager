@@ -1,0 +1,58 @@
+name: Release NuGet Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version to publish (defaults to release tag)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  publish-nuget-packages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Determine package version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          if [ -z "$VERSION" ]; then
+            echo "No version found. For manual runs, provide the version input."
+            exit 1
+          fi
+
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and pack source packages
+        run: |
+          mkdir -p ./nupkg
+          for project in src/*/*.csproj; do
+            echo "Packing ${project}"
+            dotnet pack "$project" --configuration Release --no-restore --output ./nupkg /p:Version=${{ steps.version.outputs.version }} /p:PackageVersion=${{ steps.version.outputs.version }}
+          done
+
+      - name: Push NuGet packages
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -1,0 +1,8 @@
+# Fill in your Aliyun KMS credentials before running
+provider:
+  aliyunKms:
+    region: cn-hangzhou
+    access:
+      key: your-access-key-id
+    secret:
+      key: your-access-key-secret

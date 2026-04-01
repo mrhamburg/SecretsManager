@@ -1,0 +1,228 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  filesystem:
+    name: Filesystem
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            filesystem:
+              path: ./secrets-integration-test
+
+  azure-keyvault:
+    name: Azure Key Vault
+    runs-on: ubuntu-latest
+    if: vars.HAS_AZURE_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            azureKeyVault:
+              vaultUrl: "${{ secrets.AZURE_VAULT_URL }}"
+              authentication:
+                type: serviceprincipal
+                tenantId: "${{ secrets.AZURE_TENANT_ID }}"
+                clientId: "${{ secrets.AZURE_CLIENT_ID }}"
+                clientSecret: "${{ secrets.AZURE_CLIENT_SECRET }}"
+
+  scaleway:
+    name: Scaleway
+    runs-on: ubuntu-latest
+    if: vars.HAS_SCALEWAY_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            scaleway:
+              region: "${{ secrets.SCALEWAY_REGION }}"
+              project:
+                id: "${{ secrets.SCALEWAY_PROJECT_ID }}"
+              access:
+                key: "${{ secrets.SCALEWAY_ACCESS_KEY }}"
+              secret:
+                key: "${{ secrets.SCALEWAY_SECRET_KEY }}"
+
+  postgresql:
+    name: PostgreSQL
+    runs-on: ubuntu-latest
+    if: vars.HAS_POSTGRESQL_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            postgresql:
+              connection:
+                string: "${{ secrets.POSTGRESQL_CONNECTION_STRING }}"
+              schema: public
+              table:
+                prefix: sm_
+              auto:
+                create:
+                  schema: true
+              encryption:
+                key: "${{ secrets.POSTGRESQL_ENCRYPTION_KEY }}"
+
+  ovh:
+    name: OVH
+    runs-on: ubuntu-latest
+    if: vars.HAS_OVH_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            ovh:
+              endpoint: "${{ secrets.OVH_ENDPOINT }}"
+              application:
+                key: "${{ secrets.OVH_APPLICATION_KEY }}"
+              application:
+                secret: "${{ secrets.OVH_APPLICATION_SECRET }}"
+              consumer:
+                key: "${{ secrets.OVH_CONSUMER_KEY }}"
+              okms:
+                id: "${{ secrets.OVH_OKMS_ID }}"
+
+  aws:
+    name: AWS
+    runs-on: ubuntu-latest
+    if: vars.HAS_AWS_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            awsSecretsManager:
+              region: "${{ secrets.AWS_REGION }}"
+              access:
+                key: "${{ secrets.AWS_ACCESS_KEY }}"
+              secret:
+                key: "${{ secrets.AWS_SECRET_KEY }}"
+
+  oracle-vault:
+    name: Oracle Vault
+    runs-on: ubuntu-latest
+    if: vars.HAS_ORACLE_VAULT_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            oracleVault:
+              region: "${{ secrets.ORACLE_VAULT_REGION }}"
+              authentication:
+                type: configfile
+                profileName: DEFAULT
+              vault:
+                id: "${{ secrets.ORACLE_VAULT_ID }}"
+              compartment:
+                id: "${{ secrets.ORACLE_COMPARTMENT_ID }}"
+
+  google-secret-manager:
+    name: Google Secret Manager
+    runs-on: ubuntu-latest
+    if: vars.HAS_GCP_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            googleSecretManager:
+              project:
+                id: "${{ secrets.GCP_PROJECT_ID }}"
+              credentials:
+                json: "${{ secrets.GCP_SA_KEY }}"
+
+  passbolt:
+    name: Passbolt
+    runs-on: ubuntu-latest
+    if: vars.HAS_PASSBOLT_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            passbolt:
+              base:
+                url: "${{ secrets.PASSBOLT_BASE_URL }}"
+              user:
+                private:
+                  key: "${{ secrets.PASSBOLT_USER_PRIVATE_KEY }}"
+                  passphrase: "${{ secrets.PASSBOLT_USER_PRIVATE_KEY_PASSPHRASE }}"
+                key:
+                  fingerprint: "${{ secrets.PASSBOLT_USER_KEY_FINGERPRINT }}"
+
+  aliyun-kms:
+    name: Aliyun KMS
+    runs-on: ubuntu-latest
+    if: vars.HAS_ALIYUN_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            aliyunKms:
+              region: "${{ secrets.ALIYUN_REGION }}"
+              access:
+                key: "${{ secrets.ALIYUN_ACCESS_KEY_ID }}"
+              secret:
+                key: "${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}"
+
+  ibm-cloud-secrets-manager:
+    name: IBM Cloud Secrets Manager
+    runs-on: ubuntu-latest
+    if: vars.HAS_IBM_CLOUD_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            ibmcloud-secrets-manager:
+              region: "${{ secrets.IBM_CLOUD_REGION }}"
+              instance.id: "${{ secrets.IBM_CLOUD_INSTANCE_ID }}"
+              api.key: "${{ secrets.IBM_CLOUD_API_KEY }}"
+
+  tencent-cloud:
+    name: Tencent Cloud
+    runs-on: ubuntu-latest
+    if: vars.HAS_TENCENT_CLOUD_SECRETS == 'true'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            tencentCloud:
+              region: "${{ secrets.TENCENT_CLOUD_REGION }}"
+              secret:
+                id: "${{ secrets.TENCENT_CLOUD_SECRET_ID }}"
+                key: "${{ secrets.TENCENT_CLOUD_SECRET_KEY }}"

@@ -1,0 +1,9 @@
+# Fill in your Azure Key Vault credentials before running
+provider:
+  azureKeyVault:
+    vaultUrl: https://your-vault.vault.azure.net
+    authentication:
+      type: serviceprincipal
+      tenantId: your-tenant-id
+      clientId: your-client-id
+      clientSecret: your-client-secret

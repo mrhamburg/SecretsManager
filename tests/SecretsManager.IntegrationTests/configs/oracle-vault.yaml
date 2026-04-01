@@ -1,0 +1,11 @@
+# Fill in your Oracle Vault credentials before running
+provider:
+  oracleVault:
+    region: us-phoenix-1
+    authentication:
+      type: configfile
+      profileName: DEFAULT
+    vault:
+      id: ocid1.vault.oc1..xxxxx
+    compartment:
+      id: ocid1.compartment.oc1..xxxxx

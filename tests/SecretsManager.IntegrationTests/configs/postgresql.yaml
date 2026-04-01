@@ -1,0 +1,13 @@
+# Fill in your PostgreSQL connection details before running
+provider:
+  postgresql:
+    connection:
+      string: "Host=localhost;Database=secrets;Username=app;Password=secret"
+    schema: public
+    table:
+      prefix: sm_
+    auto:
+      create:
+        schema: true
+    encryption:
+      key: "base64encodedkey"    # or keyFile: /path/to/keyfile

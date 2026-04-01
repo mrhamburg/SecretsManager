@@ -1,0 +1,14 @@
+# Fill in your Passbolt credentials before running
+provider:
+  passbolt:
+    base:
+      url: https://passbolt.example.com
+    user:
+      private:
+        key: |
+          -----BEGIN PGP PRIVATE KEY BLOCK-----
+          <your-armored-private-key>
+          -----END PGP PRIVATE KEY BLOCK-----
+        passphrase: your-passphrase
+      key:
+        fingerprint: YOUR_FINGERPRINT_HERE

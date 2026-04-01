@@ -1,0 +1,51 @@
+name: Run Integration Test
+description: Publish and run integration tests against a configured provider
+
+inputs:
+  dotnet-version:
+    description: .NET SDK version to use
+    default: '9.0.x'
+  config:
+    description: YAML config content for the provider
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+  - name: Setup .NET
+    uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: ${{ inputs.dotnet-version }}
+
+  - name: Cache NuGet packages
+    uses: actions/cache@v4
+    with:
+      path: ~/.nuget/packages
+      key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
+      restore-keys: |
+        nuget-${{ runner.os }}-
+
+  - name: Restore and publish
+    shell: bash
+    run: >-
+      dotnet publish
+      tests/SecretsManager.IntegrationTests/SecretsManager.IntegrationTests.csproj
+      -c Release
+      -o ./integration-publish
+
+  - name: Write provider config
+    shell: bash
+    env:
+      CONFIG_CONTENT: ${{ inputs.config }}
+    run: printf '%s\n' "$CONFIG_CONTENT" > ./integration-publish/config.yaml
+
+  - name: Run integration tests
+    shell: bash
+    working-directory: ./integration-publish
+    run: ./SecretsManager.IntegrationTests config.yaml
+
+  - name: Clean up
+    if: always()
+    shell: bash
+    run: rm -rf ./integration-publish

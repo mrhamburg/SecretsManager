@@ -1,0 +1,10 @@
+# OVH integration test configuration
+provider: ovh
+
+# OVH configuration
+ovh:
+  endpoint: "ovh-eu"
+  application.key: "your-app-key-here"
+  application.secret: "your-app-secret-here"
+  consumer.key: "your-consumer-key-here"
+  okms.id: "your-okms-id-here"

@@ -1,0 +1,170 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SecretsManager;
+
+/// <summary>
+/// Retries failed operations with exponential backoff.
+/// </summary>
+public sealed class RetryLayer : ISecretProviderLayer
+{
+    private readonly RetryLayerOptions _options;
+
+    public RetryLayer(RetryLayerOptions? options = null)
+    {
+        _options = options ?? new RetryLayerOptions();
+
+        if (_options.MaxAttempts < 1)
+            throw new ArgumentOutOfRangeException(nameof(RetryLayerOptions.MaxAttempts));
+
+        if (_options.MaxDelay < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(RetryLayerOptions.MaxDelay));
+
+        if (_options.BaseDelay < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(RetryLayerOptions.BaseDelay));
+
+        if (_options.JitterFactor is < 0 or > 1)
+            throw new ArgumentOutOfRangeException(nameof(RetryLayerOptions.JitterFactor));
+    }
+
+    public ISecretProvider Wrap(ISecretProvider inner)
+    {
+        ArgumentNullException.ThrowIfNull(inner);
+        return new RetrySecretProvider(inner, _options);
+    }
+
+    private sealed class RetrySecretProvider(ISecretProvider inner, RetryLayerOptions options) : ISecretProvider
+    {
+        private readonly ISecretProvider _inner = inner;
+        private readonly RetryLayerOptions _options = options;
+
+        public async Task<SecretValue> GetSecretAsync(
+            string key,
+            SecretQuery? query = null,
+            CancellationToken cancellationToken = default)
+        {
+            return await ExecuteAsync(
+                "GetSecretAsync",
+                key,
+                token => _inner.GetSecretAsync(key, query, token),
+                cancellationToken);
+        }
+
+        public async Task<SecretValue> PutSecretAsync(
+            string key,
+            string value,
+            SecretMetadata? metadata = null,
+            CancellationToken cancellationToken = default)
+        {
+            return await ExecuteAsync(
+                "PutSecretAsync",
+                key,
+                token => _inner.PutSecretAsync(key, value, metadata, token),
+                cancellationToken);
+        }
+
+        public async Task DeleteSecretAsync(string key, CancellationToken cancellationToken = default)
+        {
+            await ExecuteAsync(
+                "DeleteSecretAsync",
+                key,
+                token => _inner.DeleteSecretAsync(key, token),
+                cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<SecretVersionInfo>> GetSecretVersionsAsync(
+            string key,
+            CancellationToken cancellationToken = default)
+        {
+            return await ExecuteAsync(
+                "GetSecretVersionsAsync",
+                key,
+                token => _inner.GetSecretVersionsAsync(key, token),
+                cancellationToken);
+        }
+
+        public async Task<bool> SecretExistsAsync(string key, CancellationToken cancellationToken = default)
+        {
+            return await ExecuteAsync(
+                "SecretExistsAsync",
+                key,
+                token => _inner.SecretExistsAsync(key, token),
+                cancellationToken);
+        }
+
+        public ValueTask DisposeAsync() => _inner.DisposeAsync();
+
+        private async Task ExecuteAsync(
+            string operation,
+            string key,
+            Func<CancellationToken, Task> operationExecutor,
+            CancellationToken cancellationToken)
+        {
+            await ExecuteAsync<object>(
+                operation,
+                key,
+                async token =>
+                {
+                    await operationExecutor(token);
+                    return null!;
+                },
+                cancellationToken);
+        }
+
+        private async Task<TResult> ExecuteAsync<TResult>(
+            string operation,
+            string key,
+            Func<CancellationToken, Task<TResult>> operationExecutor,
+            CancellationToken cancellationToken)
+        {
+            var attempt = 1;
+
+            while (true)
+            {
+                try
+                {
+                    return await operationExecutor(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (ShouldRetry(ex) && attempt < _options.MaxAttempts)
+                {
+                    attempt++;
+                    var delay = CalculateDelay(attempt);
+                    await Task.Delay(delay, cancellationToken);
+                }
+            }
+        }
+
+        private bool ShouldRetry(Exception ex)
+        {
+            if (_options.RetryPredicate is not null)
+                return _options.RetryPredicate(ex);
+
+            return ex is not OperationCanceledException && ex is not SecretNotFoundException;
+        }
+
+        private TimeSpan CalculateDelay(int attempt)
+        {
+            if (attempt <= 1)
+                return _options.BaseDelay;
+
+            var exponent = Math.Min(10, attempt - 1);
+            var exponential = Math.Min(
+                _options.MaxDelay.TotalMilliseconds,
+                _options.BaseDelay.TotalMilliseconds * Math.Pow(2, exponent));
+
+            if (_options.JitterFactor <= 0)
+                return TimeSpan.FromMilliseconds(exponential);
+
+            var jitterAmount = exponential * _options.JitterFactor;
+            var jitter = (Random.Shared.NextDouble() * 2 - 1) * jitterAmount;
+            var value = Math.Max(0, exponential + jitter);
+            return TimeSpan.FromMilliseconds(value);
+        }
+    }
+}

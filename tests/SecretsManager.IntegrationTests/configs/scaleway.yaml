@@ -1,0 +1,10 @@
+# Fill in your Scaleway credentials before running
+provider:
+  scaleway:
+    region: fr-par
+    project:
+      id: your-project-id
+    access:
+      key: your-access-key
+    secret:
+      key: your-secret-key
