@@ -16,7 +16,7 @@ public sealed class AzureKeyVaultSecretProviderFactory : ISecretProviderFactory
     {
         var options = new AzureKeyVaultOptions();
 
-        if (configuration.TryGetValue("vault.url", out var vaultUrl) && !string.IsNullOrWhiteSpace(vaultUrl))
+        if (configuration.TryGetValue("vaulturl", out var vaultUrl) && !string.IsNullOrWhiteSpace(vaultUrl))
             options.VaultUrl = vaultUrl;
 
         if (configuration.TryGetValue("authentication.type", out var authType) && !string.IsNullOrWhiteSpace(authType))
