@@ -56,7 +56,6 @@ export default function HeroSection(): React.JSX.Element {
               <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem'}}>
                 <span className="badge-pill badge-dotnet">.NET 9.0</span>
                 <span className="badge-pill badge-license">MIT / Apache 2.0</span>
-                <span className="badge-pill badge-version">v1.0.0</span>
               </div>
 
               <h1 style={{fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', fontWeight: 700, marginBottom: '1.5rem', lineHeight: 1.1}}>
@@ -79,7 +78,7 @@ export default function HeroSection(): React.JSX.Element {
                 <Link className="btn-primary" to="/docs/intro">
                   Get Started
                 </Link>
-                <a className="btn-outline" href="https://github.com/yourorg/SecretsManager">
+                <a className="btn-outline" href="https://github.com/mrhamburg/SecretsManager">
                   View on GitHub
                 </a>
               </div>
