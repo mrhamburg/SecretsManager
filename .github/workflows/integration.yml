@@ -67,7 +67,20 @@ jobs:
   postgresql:
     name: PostgreSQL
     runs-on: ubuntu-latest
-    if: vars.HAS_POSTGRESQL_SECRETS == 'true'
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: secrets
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
     - uses: actions/checkout@v4
     - uses: ./.github/actions/integration-test
@@ -76,7 +89,7 @@ jobs:
           provider:
             postgresql:
               connection:
-                string: "${{ secrets.POSTGRESQL_CONNECTION_STRING }}"
+                string: "Host=localhost;Port=5432;Database=secrets;Username=postgres;Password=postgres"
               schema: public
               table:
                 prefix: sm_
@@ -84,7 +97,7 @@ jobs:
                 create:
                   schema: true
               encryption:
-                key: "${{ secrets.POSTGRESQL_ENCRYPTION_KEY }}"
+                key: "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY="
 
   ovh:
     name: OVH
