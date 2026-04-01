@@ -7,8 +7,8 @@ const config: Config = {
   tagline: 'Unified .NET Secret Management',
   favicon: 'img/favicon.svg',
 
-  url: 'https://secretsmanager.dev',
-  baseUrl: '/',
+  url: 'https://mrhamburg.github.io',
+  baseUrl: '/SecretsManager/',
 
   organizationName: 'yourorg',
   projectName: 'SecretsManager',
