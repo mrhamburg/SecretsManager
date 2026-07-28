@@ -54,17 +54,17 @@ internal sealed class VaultApiClient : IVaultApiClient
 
         await EnsureSuccess(response, $"reading secret '{key}'", cancellationToken);
 
-        var envelope = await response.Content.ReadFromJsonAsync<DataEnvelope>(JsonOptions, cancellationToken)
+        var envelope = await response.Content.ReadFromJsonAsync<GetResponseEnvelope>(JsonOptions, cancellationToken)
             ?? throw new SecretProviderException($"Empty response when reading secret '{key}'.");
 
-        var data = envelope.Data!;
+        var inner = envelope.Data!;
 
         return new VaultSecretResult(
             key,
-            data.Data?.Value ?? "",
-            data.Metadata!.Version,
-            data.Metadata.CreatedAt,
-            data.Metadata.UpdatedAt);
+            inner.Data?.Value ?? "",
+            inner.Metadata!.Version,
+            inner.Metadata.CreatedTime,
+            inner.Metadata.UpdatedTime);
     }
 
     public async Task<VaultSecretResult> PutSecretAsync(
@@ -79,17 +79,17 @@ internal sealed class VaultApiClient : IVaultApiClient
         var response = await _http.PutAsJsonAsync(url, payload, JsonOptions, cancellationToken);
         await EnsureSuccess(response, $"writing secret '{key}'", cancellationToken);
 
-        var envelope = await response.Content.ReadFromJsonAsync<DataEnvelope>(JsonOptions, cancellationToken)
+        var envelope = await response.Content.ReadFromJsonAsync<PutResponseEnvelope>(JsonOptions, cancellationToken)
             ?? throw new SecretProviderException($"Empty response when writing secret '{key}'.");
 
-        var metadata = envelope.Data!.Metadata!;
+        var meta = envelope.Data!;
 
-        return new VaultSecretResult(key, value, metadata.Version, metadata.CreatedAt, metadata.UpdatedAt);
+        return new VaultSecretResult(key, value, meta.Version, meta.CreatedTime, meta.UpdatedTime);
     }
 
     public async Task DeleteSecretAsync(string key, CancellationToken cancellationToken)
     {
-        var url = $"{_basePath}/data/{Uri.EscapeDataString(key)}";
+        var url = $"{_basePath}/metadata/{Uri.EscapeDataString(key)}";
         var response = await _http.DeleteAsync(url, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -112,8 +112,14 @@ internal sealed class VaultApiClient : IVaultApiClient
         var envelope = await response.Content.ReadFromJsonAsync<MetadataEnvelope>(JsonOptions, cancellationToken)
             ?? throw new SecretProviderException($"Empty response when listing versions for '{key}'.");
 
-        return envelope.Data!.Versions
-            .Select(v => new VaultVersionResult(v.Version, v.CreatedAt, v.Version == envelope.Data.CurrentVersion, v.Destroyed))
+        var data = envelope.Data!;
+
+        return data.Versions
+            .Select(kvp => new VaultVersionResult(
+                int.Parse(kvp.Key),
+                kvp.Value.CreatedTime,
+                int.Parse(kvp.Key) == data.CurrentVersion,
+                kvp.Value.Destroyed))
             .ToList()
             .AsReadOnly();
     }
@@ -158,12 +164,14 @@ internal sealed class VaultApiClient : IVaultApiClient
         public Dictionary<string, string> Data { get; set; } = [];
     }
 
-    private sealed class DataEnvelope
+    // GET /v1/{mount}/data/{key} response
+    // { "data": { "data": { "value": "..." }, "metadata": { "created_time": "...", "version": 1 } } }
+    private sealed class GetResponseEnvelope
     {
-        public DataWrapper? Data { get; set; }
+        public GetResponseData? Data { get; set; }
     }
 
-    private sealed class DataWrapper
+    private sealed class GetResponseData
     {
         public SecretData? Data { get; set; }
         public VaultMetadata? Metadata { get; set; }
@@ -174,14 +182,30 @@ internal sealed class VaultApiClient : IVaultApiClient
         public string Value { get; set; } = "";
     }
 
+    // PUT /v1/{mount}/data/{key} response
+    // { "data": { "created_time": "...", "version": 1 } }
+    private sealed class PutResponseEnvelope
+    {
+        public PutResponseData? Data { get; set; }
+    }
+
+    private sealed class PutResponseData
+    {
+        public int Version { get; set; }
+        public DateTimeOffset CreatedTime { get; set; }
+        public DateTimeOffset? UpdatedTime { get; set; }
+    }
+
     private sealed class VaultMetadata
     {
         public int Version { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset? UpdatedAt { get; set; }
+        public DateTimeOffset CreatedTime { get; set; }
+        public DateTimeOffset? UpdatedTime { get; set; }
         public bool Destroyed { get; set; }
     }
 
+    // LIST|GET /v1/{mount}/metadata/{key} response
+    // { "data": { "current_version": 1, "versions": { "1": { "created_time": "...", "destroyed": false } } } }
     private sealed class MetadataEnvelope
     {
         public MetadataData? Data { get; set; }
@@ -190,13 +214,12 @@ internal sealed class VaultApiClient : IVaultApiClient
     private sealed class MetadataData
     {
         public int CurrentVersion { get; set; }
-        public List<VersionEntry> Versions { get; set; } = [];
+        public Dictionary<string, VersionEntry> Versions { get; set; } = [];
     }
 
     private sealed class VersionEntry
     {
-        public int Version { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset CreatedTime { get; set; }
         public bool Destroyed { get; set; }
     }
 }
