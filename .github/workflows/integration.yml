@@ -340,3 +340,34 @@ jobs:
               secret:
                 id: "${{ secrets.TENCENT_CLOUD_SECRET_ID }}"
                 key: "${{ secrets.TENCENT_CLOUD_SECRET_KEY }}"
+
+  vault:
+    name: HashiCorp Vault
+    runs-on: ubuntu-latest
+    services:
+      vault:
+        image: hashicorp/vault:latest
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root-token
+        ports:
+          - 8200:8200
+        options: >-
+          --cap-add IPC_LOCK
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8200/v1/sys/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            vault:
+              url: http://localhost:8200
+              token: root-token
+              mount:
+                path: secret
+              skip:
+                tls:
+                  verify: true
