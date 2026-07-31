@@ -11,6 +11,7 @@ import PassboltLogoSvg from '@site/static/img/passbolt-logo.svg';
 import PostgreSqlLogoSvg from '@site/static/img/postgresql-logo.svg';
 import ScalewayLogoSvg from '@site/static/img/scaleway-logo.svg';
 import TencentCloudLogoSvg from '@site/static/img/tencentcloud-logo.svg';
+import VaultLogoSvg from '@site/static/img/vault-logo.svg';
 
 interface LogoProps {
   style?: React.CSSProperties;
@@ -62,4 +63,8 @@ export function ScalewayLogo({style}: LogoProps): React.JSX.Element {
 
 export function TencentCloudLogo({style}: LogoProps): React.JSX.Element {
   return <TencentCloudLogoSvg style={style} />;
+}
+
+export function VaultLogo({style}: LogoProps): React.JSX.Element {
+  return <VaultLogoSvg style={style} />;
 }

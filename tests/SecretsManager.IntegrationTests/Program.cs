@@ -12,6 +12,7 @@ using SecretsManager.Passbolt;
 using SecretsManager.AliyunKms;
 using SecretsManager.IBMCloudSecretsManager;
 using SecretsManager.TencentCloud;
+using SecretsManager.Vault;
 
 if (args.Length == 0)
 {
@@ -50,6 +51,7 @@ try
         .WithAliyunKms()
         .WithTencentCloud()
         .WithIBMCloudSecretsManager()
+        .WithVault()
         .FromYamlFile(configPath)
         .Build();
 }

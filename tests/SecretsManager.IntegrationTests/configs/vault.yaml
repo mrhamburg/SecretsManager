@@ -1,0 +1,10 @@
+# Fill in your Vault connection details before running
+provider:
+  vault:
+    url: http://localhost:8200
+    token: root-token
+    mount:
+      path: secret
+    skip:
+      tls:
+        verify: true
