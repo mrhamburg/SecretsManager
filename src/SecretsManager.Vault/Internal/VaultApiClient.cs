@@ -105,7 +105,7 @@ internal sealed class VaultApiClient : IVaultApiClient
         var response = await _http.GetAsync(url, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
-            return Array.Empty<VaultVersionResult>();
+            return [];
 
         await EnsureSuccess(response, $"listing versions for '{key}'", cancellationToken);
 
