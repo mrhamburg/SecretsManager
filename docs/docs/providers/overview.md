@@ -7,7 +7,7 @@ sidebar_position: 1
 
 # Providers Overview
 
-SecretsManager supports eight production-ready providers, each designed for different use cases and environments.
+SecretsManager supports thirteen production-ready providers, each designed for different use cases and environments.
 
 ## Available Providers
 
@@ -122,19 +122,30 @@ SecretsManager supports eight production-ready providers, each designed for diff
     </p>
     <a href="/docs/providers/ibm-cloud-secrets-manager" style={{color: '#000000', fontSize: '0.875rem'}}>Learn more &rarr;</a>
   </div>
+
+  <div className="feature-card provider-card-vault" style={{padding: '1.5rem', borderRadius: '0.75rem', border: '1px solid'}}>
+    <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
+      <img src="/img/vault-logo.svg" alt="Vault" style={{width: '1.25rem', height: '1.25rem'}} />
+      <span style={{color: '#000000', fontWeight: 600, fontSize: '1.125rem'}}>HashiCorp Vault</span>
+    </div>
+    <p style={{fontSize: '0.875rem', marginBottom: '0.75rem'}}>
+      Industry-standard secret management with KV v2 versioning, fine-grained policies, and audit logging.
+    </p>
+    <a href="/docs/providers/vault" style={{color: '#000000', fontSize: '0.875rem'}}>Learn more &rarr;</a>
+  </div>
 </div>
 
 ## Feature Comparison
 
 All providers implement the `ISecretProvider` interface, but each has unique capabilities:
 
-| Feature | FileSystem | Azure Key Vault | Scaleway | OVH | PostgreSQL | AWS Secrets Manager | Google Cloud Secret Manager | Passbolt | Aliyun KMS | Tencent Cloud | IBM Cloud Secrets Manager |
-|---------|:----------:|:---------------:|:--------:|:---:|:----------:|:-------------------:|:---------------------------:|:--------:|:----------:|:-------------:|:-------------------------:|
-| Versioning | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | Yes | Yes |
-| Encryption | AES-256-GCM | HSM-backed | Managed | Managed | AES-256-GCM | AWS KMS | Google Cloud KMS | OpenPGP | KMS-managed | KMS-managed | Managed |
-| Auth Types | File Permissions | Managed Identity, Service Principal, Azure CLI | API Key, IAM | OAuth | Connection String | IAM, Access Keys, Instance Profile | ADC, Service Account Key | JWT + PGP | AccessKey | AccessKey | IAM |
-| Pricing | Free | $0.03 / 10K ops | Free (included) | Free (included) | Self-hosted | $0.40 / secret / month | $0.06 / 10K ops | Free (self-hosted) | Pay-per-use | Pay-per-use | $0.40 / secret / month |
-| Region Control | Local | Azure Regions | EU (fr-par, nl-ams) | EU (fr-par, nl-ams) | Your infrastructure | AWS Global Regions | Google Cloud Regions | Your server | Alibaba Cloud Global | Tencent Cloud Global | IBM Cloud Global |
+| Feature | FileSystem | Azure Key Vault | Scaleway | OVH | PostgreSQL | AWS Secrets Manager | Google Cloud Secret Manager | Passbolt | Aliyun KMS | Tencent Cloud | IBM Cloud Secrets Manager | HashiCorp Vault |
+|---------|:----------:|:---------------:|:--------:|:---:|:----------:|:-------------------:|:---------------------------:|:--------:|:----------:|:-------------:|:-------------------------:|:--------------:|
+| Versioning | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | Yes | Yes | Yes |
+| Encryption | AES-256-GCM | HSM-backed | Managed | Managed | AES-256-GCM | AWS KMS | Google Cloud KMS | OpenPGP | KMS-managed | KMS-managed | Managed | Storage-backed |
+| Auth Types | File Permissions | Managed Identity, Service Principal, Azure CLI | API Key, IAM | OAuth | Connection String | IAM, Access Keys, Instance Profile | ADC, Service Account Key | JWT + PGP | AccessKey | AccessKey | IAM | Token, AppRole, OIDC, K8s |
+| Pricing | Free | $0.03 / 10K ops | Free (included) | Free (included) | Self-hosted | $0.40 / secret / month | $0.06 / 10K ops | Free (self-hosted) | Pay-per-use | Pay-per-use | $0.40 / secret / month | Free (self-hosted) |
+| Region Control | Local | Azure Regions | EU (fr-par, nl-ams) | EU (fr-par, nl-ams) | Your infrastructure | AWS Global Regions | Google Cloud Regions | Your server | Alibaba Cloud Global | Tencent Cloud Global | IBM Cloud Global | Your infrastructure |
 
 :::info[Provider Selection]
 Choose your provider based on your deployment environment, compliance requirements, and budget. You can also use multiple providers in the same application for different secret types.
@@ -223,6 +234,14 @@ Choose your provider based on your deployment environment, compliance requiremen
 - You want fully managed encryption with built-in secret lifecycle management
 - You prefer global availability across multiple regions
 - You need integration with IBM Cloud Event Notifications
+
+### Use HashiCorp Vault when:
+
+- You want a self-hosted, industry-standard secret management solution
+- You need built-in KV versioning and dynamic secrets
+- You require fine-grained access control policies and audit logging
+- You need support for multiple authentication methods (tokens, AppRole, OIDC, Kubernetes)
+- Your team already runs Vault in your infrastructure
 
 :::tip[Multi-Provider Support]
 You can configure multiple providers in the same application. For example, use FileSystem for local development and IBM Cloud Secrets Manager for production by switching based on environment variables.
