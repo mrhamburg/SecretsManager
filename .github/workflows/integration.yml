@@ -427,13 +427,19 @@ jobs:
 
         api_key="$(docker logs conjur 2>&1 | grep -o 'API key for admin: [a-z0-9]*' | head -1 | awk '{print $NF}')"
 
+        http_ready=false
         for _ in {1..60}; do
           if curl -s -o /dev/null "http://localhost:80/health"; then
+            http_ready=true
             break
           fi
           sleep 2
         done
-        curl -fsS -o /dev/null "http://localhost:80/health"
+        if [ "$http_ready" = false ]; then
+          echo "Conjur server did not become reachable in time" >&2
+          docker logs conjur || true
+          exit 1
+        fi
 
         echo "api_key=$api_key" >> "$GITHUB_OUTPUT"
 
