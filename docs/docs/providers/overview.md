@@ -7,7 +7,7 @@ sidebar_position: 1
 
 # Providers Overview
 
-SecretsManager supports thirteen production-ready providers, each designed for different use cases and environments.
+SecretsManager supports fourteen production-ready providers, each designed for different use cases and environments.
 
 ## Available Providers
 
@@ -133,19 +133,27 @@ SecretsManager supports thirteen production-ready providers, each designed for d
     </p>
     <a href="/docs/providers/vault" style={{color: '#000000', fontSize: '0.875rem'}}>Learn more &rarr;</a>
   </div>
+
+  <div className="feature-card provider-card-conjur" style={{padding: '1.5rem', borderRadius: '0.75rem', border: '1px solid'}}>
+    <div style={{color: '#007CFF', fontWeight: 600, fontSize: '1.125rem', marginBottom: '0.5rem'}}>CyberArk Conjur</div>
+    <p style={{fontSize: '0.875rem', marginBottom: '0.75rem'}}>
+      Open-source machine identity secrets management with policy-based access control and built-in versioning.
+    </p>
+    <a href="/docs/providers/conjur" style={{color: '#007CFF', fontSize: '0.875rem'}}>Learn more &rarr;</a>
+  </div>
 </div>
 
 ## Feature Comparison
 
 All providers implement the `ISecretProvider` interface, but each has unique capabilities:
 
-| Feature | FileSystem | Azure Key Vault | Scaleway | OVH | PostgreSQL | AWS Secrets Manager | Google Cloud Secret Manager | Passbolt | Aliyun KMS | Tencent Cloud | IBM Cloud Secrets Manager | HashiCorp Vault |
-|---------|:----------:|:---------------:|:--------:|:---:|:----------:|:-------------------:|:---------------------------:|:--------:|:----------:|:-------------:|:-------------------------:|:--------------:|
-| Versioning | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | Yes | Yes | Yes |
-| Encryption | AES-256-GCM | HSM-backed | Managed | Managed | AES-256-GCM | AWS KMS | Google Cloud KMS | OpenPGP | KMS-managed | KMS-managed | Managed | Storage-backed |
-| Auth Types | File Permissions | Managed Identity, Service Principal, Azure CLI | API Key, IAM | OAuth | Connection String | IAM, Access Keys, Instance Profile | ADC, Service Account Key | JWT + PGP | AccessKey | AccessKey | IAM | Token, AppRole, OIDC, K8s |
-| Pricing | Free | $0.03 / 10K ops | Free (included) | Free (included) | Self-hosted | $0.40 / secret / month | $0.06 / 10K ops | Free (self-hosted) | Pay-per-use | Pay-per-use | $0.40 / secret / month | Free (self-hosted) |
-| Region Control | Local | Azure Regions | EU (fr-par, nl-ams) | EU (fr-par, nl-ams) | Your infrastructure | AWS Global Regions | Google Cloud Regions | Your server | Alibaba Cloud Global | Tencent Cloud Global | IBM Cloud Global | Your infrastructure |
+| Feature | FileSystem | Azure Key Vault | Scaleway | OVH | PostgreSQL | AWS Secrets Manager | Google Cloud Secret Manager | Passbolt | Aliyun KMS | Tencent Cloud | IBM Cloud Secrets Manager | HashiCorp Vault | CyberArk Conjur |
+|---------|:----------:|:---------------:|:--------:|:---:|:----------:|:-------------------:|:---------------------------:|:--------:|:----------:|:-------------:|:-------------------------:|:--------------:|:--------------:|
+| Versioning | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | Yes | Yes | Yes | Yes |
+| Encryption | AES-256-GCM | HSM-backed | Managed | Managed | AES-256-GCM | AWS KMS | Google Cloud KMS | OpenPGP | KMS-managed | KMS-managed | Managed | Storage-backed | Managed |
+| Auth Types | File Permissions | Managed Identity, Service Principal, Azure CLI | API Key, IAM | OAuth | Connection String | IAM, Access Keys, Instance Profile | ADC, Service Account Key | JWT + PGP | AccessKey | AccessKey | IAM | Token, AppRole, OIDC, K8s | API Key |
+| Pricing | Free | $0.03 / 10K ops | Free (included) | Free (included) | Self-hosted | $0.40 / secret / month | $0.06 / 10K ops | Free (self-hosted) | Pay-per-use | Pay-per-use | $0.40 / secret / month | Free (self-hosted) | Free (self-hosted) |
+| Region Control | Local | Azure Regions | EU (fr-par, nl-ams) | EU (fr-par, nl-ams) | Your infrastructure | AWS Global Regions | Google Cloud Regions | Your server | Alibaba Cloud Global | Tencent Cloud Global | IBM Cloud Global | Your infrastructure | Your infrastructure |
 
 :::info[Provider Selection]
 Choose your provider based on your deployment environment, compliance requirements, and budget. You can also use multiple providers in the same application for different secret types.
@@ -242,6 +250,13 @@ Choose your provider based on your deployment environment, compliance requiremen
 - You require fine-grained access control policies and audit logging
 - You need support for multiple authentication methods (tokens, AppRole, OIDC, Kubernetes)
 - Your team already runs Vault in your infrastructure
+
+### Use CyberArk Conjur when:
+
+- You want an open-source, self-hosted solution for machine identities and CI/CD pipelines
+- You need version-controlled secrets with policy-based privileges
+- You want granular, policy-driven access control for hosts and applications
+- Your team already runs Conjur in your infrastructure
 
 :::tip[Multi-Provider Support]
 You can configure multiple providers in the same application. For example, use FileSystem for local development and IBM Cloud Secrets Manager for production by switching based on environment variables.

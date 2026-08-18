@@ -89,3 +89,4 @@ Each provider has its own set of configuration options. See the individual provi
 - [OVH Provider](/docs/providers/ovh)
 - [AWS Secrets Manager Provider](/docs/providers/aws-secrets-manager)
 - [HashiCorp Vault Provider](/docs/providers/vault)
+- [CyberArk Conjur Provider](/docs/providers/conjur)

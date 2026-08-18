@@ -1,0 +1,10 @@
+# Fill in your Conjur connection details before running
+provider:
+  conjur:
+    url: https://localhost:8443
+    account: myorg
+    login: admin
+    apiKey: <your-api-key>
+    skip:
+      tls:
+        verify: true

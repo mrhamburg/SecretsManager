@@ -1,0 +1,291 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace SecretsManager.Conjur.Internal;
+
+internal sealed class ConjurApiClient : IConjurApiClient
+{
+    private readonly HttpClient _http;
+    private readonly string _account;
+    private readonly string _login;
+    private readonly string _apiKey;
+    private readonly string _policyPath;
+
+    private readonly SemaphoreSlim _tokenLock = new(1, 1);
+    private readonly HashSet<string> _knownVariables = new(StringComparer.Ordinal);
+    private string? _token;
+    private DateTimeOffset _tokenExpiry;
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    public ConjurApiClient(ConjurOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        _account = options.Account;
+        _login = options.Login;
+        _apiKey = options.ApiKey;
+        _policyPath = options.PolicyPath.Trim('/');
+
+        var handler = new HttpClientHandler();
+        if (options.SkipTlsVerify)
+            handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+
+        _http = new HttpClient(handler)
+        {
+            BaseAddress = new Uri(options.Url.TrimEnd('/'))
+        };
+    }
+
+    internal ConjurApiClient(HttpClient httpClient, ConjurOptions options)
+    {
+        _http = httpClient;
+        _account = options.Account;
+        _login = options.Login;
+        _apiKey = options.ApiKey;
+        _policyPath = options.PolicyPath.Trim('/');
+    }
+
+    public async Task<string?> GetSecretValueAsync(
+        string key, int? version, CancellationToken cancellationToken)
+    {
+        var url = $"/secrets/{_account}/variable/{Uri.EscapeDataString(key)}";
+        if (version.HasValue)
+            url += $"?version={version.Value}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        await SetAuthorizationAsync(request, cancellationToken);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        await EnsureSuccess(response, $"retrieving secret '{key}'", cancellationToken);
+
+        return await response.Content.ReadAsStringAsync(cancellationToken);
+    }
+
+    public async Task PutSecretAsync(
+        string key, string value, CancellationToken cancellationToken)
+    {
+        await EnsureVariableExistsAsync(key, cancellationToken);
+
+        var url = $"/secrets/{_account}/variable/{Uri.EscapeDataString(key)}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Content = new StringContent(value, Encoding.UTF8, "application/octet-stream");
+        await SetAuthorizationAsync(request, cancellationToken);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+        await EnsureSuccess(response, $"setting secret '{key}'", cancellationToken);
+    }
+
+    public async Task DeleteSecretAsync(string key, CancellationToken cancellationToken)
+    {
+        _knownVariables.Remove(key);
+
+        var url = $"/policies/{_account}/policy/{Uri.EscapeDataString(_policyPath)}";
+        var policy = $"- !delete\n  record: !variable {key}\n";
+
+        using var request = new HttpRequestMessage(HttpMethod.Patch, url);
+        request.Content = new StringContent(policy, Encoding.UTF8, "text/plain");
+        await SetAuthorizationAsync(request, cancellationToken);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+        await EnsureSuccess(response, $"deleting secret '{key}'", cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ConjurVersionResult>> ListVersionsAsync(
+        string key, CancellationToken cancellationToken)
+    {
+        var url = $"/resources/{_account}/variable/{Uri.EscapeDataString(key)}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        await SetAuthorizationAsync(request, cancellationToken);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return [];
+
+        await EnsureSuccess(response, $"listing versions for '{key}'", cancellationToken);
+
+        var resource = await response.Content.ReadFromJsonAsync<ResourceResponse>(JsonOptions, cancellationToken)
+            ?? throw new SecretProviderException($"Empty response when listing versions for '{key}'.");
+
+        var maxVersion = resource.Secrets.Count > 0 ? resource.Secrets.Max(s => s.Version) : 0;
+
+        return resource.Secrets
+            .OrderBy(s => s.Version)
+            .Select(s => new ConjurVersionResult(
+                s.Version,
+                resource.CreatedAt,
+                s.Version == maxVersion))
+            .ToList()
+            .AsReadOnly();
+    }
+
+    public async Task<bool> SecretExistsAsync(string key, CancellationToken cancellationToken)
+    {
+        var url = $"/resources/{_account}/variable/{Uri.EscapeDataString(key)}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        await SetAuthorizationAsync(request, cancellationToken);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+        return response.StatusCode != HttpStatusCode.NotFound && response.IsSuccessStatusCode;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _http.Dispose();
+        _tokenLock.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task SetAuthorizationAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var token = await GetTokenAsync(cancellationToken);
+        request.Headers.TryAddWithoutValidation("Authorization", $"Token token=\"{token}\"");
+    }
+
+    private async Task EnsureVariableExistsAsync(
+        string key, CancellationToken cancellationToken)
+    {
+        if (_knownVariables.Contains(key))
+            return;
+
+        if (!await SecretExistsAsync(key, cancellationToken))
+            await LoadVariablePolicyAsync(key, cancellationToken);
+
+        _knownVariables.Add(key);
+    }
+
+    private async Task LoadVariablePolicyAsync(
+        string key, CancellationToken cancellationToken)
+    {
+        var relativeKey = key;
+        var prefix = _policyPath + "/";
+        if (!string.Equals(_policyPath, "root", StringComparison.OrdinalIgnoreCase)
+            && key.StartsWith(prefix, StringComparison.Ordinal))
+            relativeKey = key[prefix.Length..];
+
+        var url = $"/policies/{_account}/policy/{Uri.EscapeDataString(_policyPath)}";
+        var policy = $"- !variable\n  id: {relativeKey}\n";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Content = new StringContent(policy, Encoding.UTF8, "text/plain");
+        await SetAuthorizationAsync(request, cancellationToken);
+
+        var response = await _http.SendAsync(request, cancellationToken);
+        await EnsureSuccess(response, $"creating variable '{key}'", cancellationToken);
+    }
+
+    private async Task<string> GetTokenAsync(CancellationToken cancellationToken)
+    {
+        if (_token is not null && DateTimeOffset.UtcNow < _tokenExpiry)
+            return _token;
+
+        await _tokenLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_token is not null && DateTimeOffset.UtcNow < _tokenExpiry)
+                return _token;
+
+            var url = $"/authn/{_account}/{Uri.EscapeDataString(_login)}/authenticate";
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = new StringContent(_apiKey, Encoding.UTF8, "text/plain");
+            request.Headers.TryAddWithoutValidation("Accept-Encoding", "base64");
+
+            var response = await _http.SendAsync(request, cancellationToken);
+            await EnsureSuccess(response, "authenticating", cancellationToken);
+
+            var token = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+            if (token.Length == 0)
+                throw new SecretProviderException("Conjur API returned an empty access token.");
+
+            _token = token;
+            _tokenExpiry = TokenExpiry(token, refreshIn: TimeSpan.FromSeconds(30));
+
+            return token;
+        }
+        finally
+        {
+            _tokenLock.Release();
+        }
+    }
+
+    private static DateTimeOffset TokenExpiry(string token, TimeSpan refreshIn)
+    {
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length < 2)
+                return DateTimeOffset.MinValue;
+
+            using var document = JsonDocument.Parse(DecodeBase64Url(parts[1]));
+            if (document.RootElement.TryGetProperty("exp", out var exp) && exp.TryGetInt64(out var expValue))
+                return DateTimeOffset.FromUnixTimeSeconds(expValue) - refreshIn;
+        }
+        catch
+        {
+            // Fall through to a conservative cache window when the token is not a JWT.
+        }
+
+        return DateTimeOffset.UtcNow.AddMinutes(2);
+    }
+
+    private static byte[] DecodeBase64Url(string value)
+    {
+        var s = value.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+        }
+        return Convert.FromBase64String(s);
+    }
+
+    private static async Task EnsureSuccess(
+        HttpResponseMessage response, string operation, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        string detail;
+        try
+        {
+            detail = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        catch
+        {
+            detail = response.StatusCode.ToString();
+        }
+
+        throw new SecretProviderException(
+            $"Conjur API error {operation}: HTTP {(int)response.StatusCode} — {detail}");
+    }
+
+    // GET /resources/{account}/variable/{identifier} response (subset of fields used)
+    // { "created_at": "...", "id": "account:variable:key", "secrets": [{ "version": 1 }] }
+    private sealed class ResourceResponse
+    {
+        public DateTimeOffset? CreatedAt { get; set; }
+        public List<SecretEntry> Secrets { get; set; } = [];
+    }
+
+    private sealed class SecretEntry
+    {
+        public int Version { get; set; }
+    }
+}

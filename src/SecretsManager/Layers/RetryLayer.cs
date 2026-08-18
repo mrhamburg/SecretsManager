@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace SecretsManager;
 
 /// <summary>
@@ -37,18 +32,13 @@ public sealed class RetryLayer : ISecretProviderLayer
 
     private sealed class RetrySecretProvider(ISecretProvider inner, RetryLayerOptions options) : ISecretProvider
     {
-        private readonly ISecretProvider _inner = inner;
-        private readonly RetryLayerOptions _options = options;
-
         public async Task<SecretValue> GetSecretAsync(
             string key,
             SecretQuery? query = null,
             CancellationToken cancellationToken = default)
         {
             return await ExecuteAsync(
-                "GetSecretAsync",
-                key,
-                token => _inner.GetSecretAsync(key, query, token),
+                token => inner.GetSecretAsync(key, query, token),
                 cancellationToken);
         }
 
@@ -59,18 +49,14 @@ public sealed class RetryLayer : ISecretProviderLayer
             CancellationToken cancellationToken = default)
         {
             return await ExecuteAsync(
-                "PutSecretAsync",
-                key,
-                token => _inner.PutSecretAsync(key, value, metadata, token),
+                token => inner.PutSecretAsync(key, value, metadata, token),
                 cancellationToken);
         }
 
         public async Task DeleteSecretAsync(string key, CancellationToken cancellationToken = default)
         {
             await ExecuteAsync(
-                "DeleteSecretAsync",
-                key,
-                token => _inner.DeleteSecretAsync(key, token),
+                token => inner.DeleteSecretAsync(key, token),
                 cancellationToken);
         }
 
@@ -79,32 +65,24 @@ public sealed class RetryLayer : ISecretProviderLayer
             CancellationToken cancellationToken = default)
         {
             return await ExecuteAsync(
-                "GetSecretVersionsAsync",
-                key,
-                token => _inner.GetSecretVersionsAsync(key, token),
+                token => inner.GetSecretVersionsAsync(key, token),
                 cancellationToken);
         }
 
         public async Task<bool> SecretExistsAsync(string key, CancellationToken cancellationToken = default)
         {
             return await ExecuteAsync(
-                "SecretExistsAsync",
-                key,
-                token => _inner.SecretExistsAsync(key, token),
+                token => inner.SecretExistsAsync(key, token),
                 cancellationToken);
         }
 
-        public ValueTask DisposeAsync() => _inner.DisposeAsync();
+        public ValueTask DisposeAsync() => inner.DisposeAsync();
 
         private async Task ExecuteAsync(
-            string operation,
-            string key,
             Func<CancellationToken, Task> operationExecutor,
             CancellationToken cancellationToken)
         {
             await ExecuteAsync<object>(
-                operation,
-                key,
                 async token =>
                 {
                     await operationExecutor(token);
@@ -114,8 +92,6 @@ public sealed class RetryLayer : ISecretProviderLayer
         }
 
         private async Task<TResult> ExecuteAsync<TResult>(
-            string operation,
-            string key,
             Func<CancellationToken, Task<TResult>> operationExecutor,
             CancellationToken cancellationToken)
         {
@@ -131,7 +107,7 @@ public sealed class RetryLayer : ISecretProviderLayer
                 {
                     throw;
                 }
-                catch (Exception ex) when (ShouldRetry(ex) && attempt < _options.MaxAttempts)
+                catch (Exception ex) when (ShouldRetry(ex) && attempt < options.MaxAttempts)
                 {
                     attempt++;
                     var delay = CalculateDelay(attempt);
@@ -142,8 +118,8 @@ public sealed class RetryLayer : ISecretProviderLayer
 
         private bool ShouldRetry(Exception ex)
         {
-            if (_options.RetryPredicate is not null)
-                return _options.RetryPredicate(ex);
+            if (options.RetryPredicate is not null)
+                return options.RetryPredicate(ex);
 
             return ex is not OperationCanceledException && ex is not SecretNotFoundException;
         }
@@ -151,17 +127,17 @@ public sealed class RetryLayer : ISecretProviderLayer
         private TimeSpan CalculateDelay(int attempt)
         {
             if (attempt <= 1)
-                return _options.BaseDelay;
+                return options.BaseDelay;
 
             var exponent = Math.Min(10, attempt - 1);
             var exponential = Math.Min(
-                _options.MaxDelay.TotalMilliseconds,
-                _options.BaseDelay.TotalMilliseconds * Math.Pow(2, exponent));
+                options.MaxDelay.TotalMilliseconds,
+                options.BaseDelay.TotalMilliseconds * Math.Pow(2, exponent));
 
-            if (_options.JitterFactor <= 0)
+            if (options.JitterFactor <= 0)
                 return TimeSpan.FromMilliseconds(exponential);
 
-            var jitterAmount = exponential * _options.JitterFactor;
+            var jitterAmount = exponential * options.JitterFactor;
             var jitter = (Random.Shared.NextDouble() * 2 - 1) * jitterAmount;
             var value = Math.Max(0, exponential + jitter);
             return TimeSpan.FromMilliseconds(value);

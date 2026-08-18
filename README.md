@@ -12,7 +12,7 @@ A unified .NET abstraction layer over secret management backends, inspired by th
 ## Features
 
 - **Unified API** — Get, put, delete, version, and check secrets through one interface
-- **Multiple backends** — Filesystem, Azure Key Vault, Scaleway, AWS, Google Cloud, Oracle Vault, IBM Cloud, PostgreSQL, OVH, Passbolt, Aliyun KMS, Tencent Cloud, HashiCorp Vault
+- **Multiple backends** — Filesystem, Azure Key Vault, Scaleway, AWS, Google Cloud, Oracle Vault, IBM Cloud, PostgreSQL, OVH, Passbolt, Aliyun KMS, Tencent Cloud, HashiCorp Vault, CyberArk Conjur
 - **Flexible configuration** — Fluent API, environment variables, or YAML (ESO-style)
 - **Secret versioning** — First-class support for secret version history across all providers
 - **JSON property extraction** — Retrieve nested values from JSON secrets via dot-path queries
@@ -36,6 +36,7 @@ A unified .NET abstraction layer over secret management backends, inspired by th
 | Aliyun KMS | `SecretsManager.AliyunKms` | Aliyun KMS via REST API |
 | Tencent Cloud | `SecretsManager.TencentCloud` | Tencent Cloud Secrets Manager via REST API |
 | HashiCorp Vault | `SecretsManager.Vault` | HashiCorp Vault KV v2 engine via REST API |
+| CyberArk Conjur | `SecretsManager.Conjur` | CyberArk Conjur via REST API |
 
 ## Quick Start
 

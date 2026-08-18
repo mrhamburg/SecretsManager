@@ -111,6 +111,11 @@ pre {
   color: #10B981;
 }
 
+.provider-conjur {
+  background: rgba(0, 124, 255, 0.2);
+  color: #007CFF;
+}
+
 /* ===== Hero Section ===== */
 .hero-gradient {
   background: linear-gradient(135deg, var(--ifm-background-color) 0%, rgba(42, 27, 94, 0.15) 50%, var(--ifm-background-color) 100%);
@@ -240,6 +245,15 @@ pre {
 [data-theme='dark'] .provider-card-vault {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.provider-card-conjur {
+  border-color: rgba(0, 124, 255, 0.3);
+  background: rgba(0, 124, 255, 0.05);
+}
+
+[data-theme='dark'] .provider-card-conjur {
+  background: rgba(0, 124, 255, 0.1);
 }
 
 /* ===== Visual Diagram Box ===== */
