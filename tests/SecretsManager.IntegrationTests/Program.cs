@@ -13,6 +13,7 @@ using SecretsManager.AliyunKms;
 using SecretsManager.IBMCloudSecretsManager;
 using SecretsManager.TencentCloud;
 using SecretsManager.Vault;
+using SecretsManager.Conjur;
 
 if (args.Length == 0)
 {
@@ -52,6 +53,7 @@ try
         .WithTencentCloud()
         .WithIBMCloudSecretsManager()
         .WithVault()
+        .WithConjur()
         .FromYamlFile(configPath)
         .Build();
 }

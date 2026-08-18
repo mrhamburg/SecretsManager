@@ -375,3 +375,74 @@ jobs:
               skip:
                 tls:
                   verify: true
+
+  conjur:
+    name: CyberArk Conjur
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: conjur
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Start Conjur server
+      shell: bash
+      run: >-
+        docker run -d --name conjur --network host
+        -e DATABASE_URL=postgres://postgres:postgres@localhost:5433/conjur
+        -e CONJUR_DATA_KEY=uOTz5ehLfkuSWtdzfWSiEY0V6ngaNrFQdQ4vse9+ywM=
+        cyberark/conjur:1.24.0
+        server -a myorg
+
+    - name: Wait for Conjur and obtain admin API key
+      id: conjur-bootstrap
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        ready=false
+        for _ in {1..90}; do
+          if docker logs conjur 2>&1 | grep -q 'API key for admin'; then
+            ready=true
+            break
+          fi
+          sleep 2
+        done
+        if [ "$ready" = false ]; then
+          echo "Conjur server did not produce an API key in time" >&2
+          docker logs conjur || true
+          exit 1
+        fi
+
+        api_key="$(docker logs conjur 2>&1 | grep -o 'API key for admin: [a-z0-9]*' | head -1 | awk '{print $NF}')"
+
+        for _ in {1..60}; do
+          if curl -s -o /dev/null "http://localhost:80/health"; then
+            break
+          fi
+          sleep 2
+        done
+        curl -fsS -o /dev/null "http://localhost:80/health"
+
+        echo "api_key=$api_key" >> "$GITHUB_OUTPUT"
+
+    - uses: ./.github/actions/integration-test
+      with:
+        config: |
+          provider:
+            conjur:
+              url: http://localhost:80
+              account: myorg
+              login: admin
+              apiKey: "${{ steps.conjur-bootstrap.outputs.api_key }}"
