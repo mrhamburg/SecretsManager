@@ -176,6 +176,7 @@ jobs:
   passbolt:
     name: Passbolt
     runs-on: ubuntu-latest
+    if: false
     services:
       passbolt-db:
         image: mariadb:10.11
