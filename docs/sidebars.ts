@@ -30,6 +30,7 @@ const sidebars: SidebarsConfig = {
         'providers/tencent-cloud',
         'providers/ibm-cloud-secrets-manager',
         'providers/vault',
+        'providers/conjur',
       ],
     },
     {

@@ -2,6 +2,7 @@ import React from 'react';
 import AliyunLogoSvg from '@site/static/img/aliyun-logo.svg';
 import AwsLogoSvg from '@site/static/img/aws-logo.svg';
 import AzureLogoSvg from '@site/static/img/azure-logo.svg';
+import ConjurLogoSvg from '@site/static/img/conjur-logo.svg';
 import FileSystemLogoSvg from '@site/static/img/filesystem-logo.svg';
 import GcpLogoSvg from '@site/static/img/gcp-logo.svg';
 import IBMCloudLogoSvg from '@site/static/img/ibmcloud-logo.svg';
@@ -27,6 +28,10 @@ export function AwsLogo({style}: LogoProps): React.JSX.Element {
 
 export function AzureLogo({style}: LogoProps): React.JSX.Element {
   return <AzureLogoSvg style={style} />;
+}
+
+export function ConjurLogo({style}: LogoProps): React.JSX.Element {
+  return <ConjurLogoSvg style={style} />;
 }
 
 export function FileSystemLogo({style}: LogoProps): React.JSX.Element {
