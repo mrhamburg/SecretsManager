@@ -1,22 +1,23 @@
 import React, {useState} from 'react';
 import Link from '@docusaurus/Link';
 import {Copy, Check} from 'lucide-react';
-import {AzureLogo, ScalewayLogo, FileSystemLogo, PostgreSqlLogo, OVHLogo, AwsLogo, OracleLogo, GcpLogo, PassboltLogo, TencentCloudLogo, AliyunLogo, IBMCloudLogo, VaultLogo} from './ProviderLogos';
+import {AzureLogo, ScalewayLogo, FileSystemLogo, PostgreSqlLogo, OVHLogo, AwsLogo, OracleLogo, GcpLogo, PassboltLogo, TencentCloudLogo, AliyunLogo, IBMCloudLogo, VaultLogo, ConjurLogo} from './ProviderLogos';
 
 const providers = [
-  {id: 'filesystem', name: 'FileSystem', package: 'SecretsManager.FileSystem'},
-  {id: 'azure', name: 'Azure Key Vault', package: 'SecretsManager.AzureKeyVault'},
-  {id: 'scaleway', name: 'Scaleway', package: 'SecretsManager.Scaleway'},
-  {id: 'ibmcloud', name: 'IBM Cloud', package: 'SecretsManager.IBMCloudSecretsManager'},
-  {id: 'postgresql', name: 'PostgreSQL', package: 'SecretsManager.PostgreSql'},
-  {id: 'ovh', name: 'OVH', package: 'SecretsManager.OVH'},
-  {id: 'aws', name: 'AWS Secrets Manager', package: 'SecretsManager.AwsSecretsManager'},
-  {id: 'oracle', name: 'Oracle Vault', package: 'SecretsManager.OracleVault'},
-  {id: 'gcp', name: 'Google Cloud', package: 'SecretsManager.GoogleSecretManager'},
-  {id: 'passbolt', name: 'Passbolt', package: 'SecretsManager.Passbolt'},
-  {id: 'aliyun', name: 'Aliyun KMS', package: 'SecretsManager.AliyunKms'},
-  {id: 'tencent', name: 'Tencent Cloud', package: 'SecretsManager.TencentCloud'},
-  {id: 'vault', name: 'HashiCorp Vault', package: 'SecretsManager.Vault'},
+  {id: 'filesystem', name: 'FileSystem', short: 'FS', package: 'SecretsManager.FileSystem'},
+  {id: 'azure', name: 'Azure Key Vault', short: 'Azure', package: 'SecretsManager.AzureKeyVault'},
+  {id: 'scaleway', name: 'Scaleway', short: 'Scaleway', package: 'SecretsManager.Scaleway'},
+  {id: 'ibmcloud', name: 'IBM Cloud', short: 'IBM', package: 'SecretsManager.IBMCloudSecretsManager'},
+  {id: 'postgresql', name: 'PostgreSQL', short: 'PG', package: 'SecretsManager.PostgreSql'},
+  {id: 'ovh', name: 'OVH', short: 'OVH', package: 'SecretsManager.OVH'},
+  {id: 'aws', name: 'AWS Secrets Manager', short: 'AWS', package: 'SecretsManager.AwsSecretsManager'},
+  {id: 'oracle', name: 'Oracle Vault', short: 'Oracle', package: 'SecretsManager.OracleVault'},
+  {id: 'gcp', name: 'Google Cloud', short: 'GCP', package: 'SecretsManager.GoogleSecretManager'},
+  {id: 'passbolt', name: 'Passbolt', short: 'Passbolt', package: 'SecretsManager.Passbolt'},
+  {id: 'aliyun', name: 'Aliyun KMS', short: 'Aliyun', package: 'SecretsManager.AliyunKms'},
+  {id: 'tencent', name: 'Tencent Cloud', short: 'Tencent', package: 'SecretsManager.TencentCloud'},
+  {id: 'vault', name: 'HashiCorp Vault', short: 'Vault', package: 'SecretsManager.Vault'},
+  {id: 'conjur', name: 'CyberArk Conjur', short: 'Conjur', package: 'SecretsManager.Conjur'},
 ];
 
 const providerLogos: Record<string, React.ReactNode> = {
@@ -33,6 +34,7 @@ const providerLogos: Record<string, React.ReactNode> = {
   aliyun: <AliyunLogo style={{width: '1.5rem', height: '1.5rem'}} />,
   tencent: <TencentCloudLogo style={{width: '1.5rem', height: '1.5rem'}} />,
   vault: <VaultLogo style={{width: '1.5rem', height: '1.5rem'}} />,
+  conjur: <ConjurLogo style={{width: '1.5rem', height: '1.5rem'}} />,
 };
 
 export default function HeroSection(): React.JSX.Element {
@@ -73,7 +75,7 @@ export default function HeroSection(): React.JSX.Element {
               </h1>
 
                 <p style={{fontSize: '1.25rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '2rem', lineHeight: 1.6}}>
-                A unified .NET 9.0 abstraction layer for 12 secret backends including Azure Key Vault, AWS, Google Cloud, Oracle Vault, PostgreSQL, Scaleway, OVH, IBM Cloud, Aliyun KMS, Passbolt, Tencent Cloud, and local encrypted storage. Inspired by Kubernetes External Secrets.
+                A unified .NET 9.0 abstraction layer for 14 secret backends including Azure Key Vault, AWS, Google Cloud, Oracle Vault, PostgreSQL, Scaleway, OVH, IBM Cloud, Aliyun KMS, Passbolt, Tencent Cloud, HashiCorp Vault, CyberArk Conjur, and local encrypted storage. Inspired by Kubernetes External Secrets.
                 </p>
 
               <div style={{display: 'flex', flexWrap: 'wrap', gap: '1rem'}}>
@@ -129,7 +131,7 @@ export default function HeroSection(): React.JSX.Element {
                   >
                     {providerLogos[p.id]}
                     <span style={{fontSize: '0.625rem', color: 'var(--ifm-color-emphasis-600)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%'}}>
-                      {p.id === 'filesystem' ? 'FS' : p.id === 'azure' ? 'Azure' : p.id === 'scaleway' ? 'Scaleway' : p.id === 'ibmcloud' ? 'IBM' : p.id === 'postgresql' ? 'PG' : p.id === 'ovh' ? 'OVH' : p.id === 'aws' ? 'AWS' : p.id === 'oracle' ? 'Oracle' : p.id === 'gcp' ? 'GCP' : p.id === 'passbolt' ? 'Passbolt' : p.id === 'aliyun' ? 'Aliyun' : p.id === 'tencent' ? 'Tencent' : 'Vault'}
+                      {p.short}
                     </span>
                   </div>
                 ))}
