@@ -35,6 +35,31 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
+    - name: Check API compatibility
+      run: |
+        # Build the checker tool and current branch assemblies
+        dotnet build tools/ApiCompatChecker/ApiCompatChecker.csproj -c Release --no-restore
+        dotnet build src/SecretsManager.Vault/SecretsManager.Vault.csproj -c Release --no-restore
+
+        # Save current branch assemblies as the "current" set
+        mkdir -p /tmp/api-current
+        cp src/SecretsManager.Vault/bin/Release/net10.0/SecretsManager.Vault.dll /tmp/api-current/
+        cp src/SecretsManager.Vault/bin/Release/net10.0/SecretsManager.dll /tmp/api-current/ 2>/dev/null || true
+
+        # Checkout main and build it as the "base" set
+        git fetch origin main
+        git checkout origin/main --detach
+        dotnet restore SecretsManager.sln
+        dotnet build src/SecretsManager.Vault/SecretsManager.Vault.csproj -c Release --no-restore
+
+        # Compare: main (base) vs current branch (current)
+        dotnet tools/ApiCompatChecker/bin/Release/net10.0/ApiCompatChecker.dll \
+          "src/SecretsManager.Vault/bin/Release/net10.0" \
+          "/tmp/api-current"
+
+        # Return to the PR branch
+        git checkout -
+
     - name: Check formatting
       run: dotnet format --verify-no-changes --no-restore
 
