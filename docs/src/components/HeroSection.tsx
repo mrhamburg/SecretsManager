@@ -2,6 +2,9 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Link from '@docusaurus/Link';
 import styles from './landing.module.css';
 
+// NuGet package IDs are published under the owner's reserved prefix.
+const NUGET_PACKAGE_PREFIX = 'mrhamburg.';
+
 const providers = [
   {
     id: 'filesystem',
@@ -407,7 +410,10 @@ function ProviderPanel(): React.JSX.Element {
     <figure className={styles.panel} aria-label="Provider configuration example">
       <div className={styles.panelHead}>
         <span className={styles.panelTitle}>Program.cs</span>
-        <span className={styles.panelBadge}>{provider.package}</span>
+        <span className={styles.panelBadge}>
+          {NUGET_PACKAGE_PREFIX}
+          {provider.package}
+        </span>
       </div>
 
       <div
